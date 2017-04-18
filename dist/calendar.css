@@ -52,14 +52,31 @@
 
 .ui.calendar .ui.table.year,
 .ui.calendar .ui.table.month,
+.ui.calendar .ui.table.hour,
 .ui.calendar .ui.table.minute {
   min-width: 15em;
+}
+.ui.calendar .ui.table.minute thead > tr > th,
+.ui.calendar .ui.table.hour thead > tr > th {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 .ui.calendar .ui.table.day {
   min-width: 18em;
 }
-.ui.calendar .ui.table.hour {
-  min-width: 20em;
+.ui.calendar .ui.table .time-header {
+  background-color: #F9FAFB;
+  font-weight: bold;
+}
+.ui.calendar .ui.table .time-header span {
+  padding: 0 0.1em;
+}
+.ui.calendar .ui.table .time-header b {
+  margin: 0 1px;
+  padding: 0.15em 0.2em;
+  border-radius: 0.15em;
+  background-color: #FFFFFF;
+  border: 1px solid #85B7D9;
 }
 .ui.calendar .ui.table tr th,
 .ui.calendar .ui.table tr td {

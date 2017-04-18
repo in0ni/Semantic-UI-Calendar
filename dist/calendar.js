@@ -203,9 +203,9 @@
               var startMonth = display.getMonth() + monthOffset;
               var year = display.getFullYear();
 
-              var columns = isDay ? 7 : isHour ? 4 : 3;
+              var columns = isDay ? 7 : isHour || isMinute ? 4 : 3;
               var columnsString = columns === 7 ? 'seven' : columns === 4 ? 'four' : 'three';
-              var rows = isDay || isHour ? 6 : 4;
+              var rows = isDay || isHour ? 6 : isMinute ? 3 : 4;
               var pages = isDay ? multiMonth : 1;
 
               var container = $container;
@@ -280,16 +280,41 @@
                 }
 
                 var tbody = $('<tbody/>').appendTo(table);
+
+                // add sub-header for hour/minute selection
+                if (isHour || isMinute) {
+                  var ampm = hour > 11 ? settings.text.pm : settings.text.am;
+                  var displayRounded = new Date(year, month, day, hour, Math.round(minute/5)*5);
+                  var highlighter = $('<b/>');
+                  var displayHour = formatter.time(displayRounded, settings, '24h');
+                  var displayMin = formatter.time(displayRounded, settings, 'minute');
+                  var timeHeaderRow = $('<tr/>');
+                  var timeHeaderCol = $('<td/>', {class:className.timeHeader, colspan:columns});
+                  // assemble header
+                  if (isHour) displayHour = highlighter.append(displayHour);
+                  if (isMinute) displayMin = highlighter.append(displayMin);
+                  timeHeaderCol.append(displayHour).append($('<span/>').text(':')).append(displayMin);
+                  if (settings.ampm) timeHeaderCol.append(' ').append(ampm);
+                  timeHeaderRow.append(timeHeaderCol).prependTo(tbody);
+                }
+
                 i = isYear ? Math.ceil(year / 10) * 10 - 9 : isDay ? 1 - firstMonthDayColumn : 0;
                 for (r = 0; r < rows; r++) {
                   row = $('<tr/>').appendTo(tbody);
                   for (c = 0; c < columns; c++, i++) {
-                    var cellDate = isYear ? new Date(i, month, 1, hour, minute) :
-                      isMonth ? new Date(year, i, 1, hour, minute) : isDay ? new Date(year, month, i, hour, minute) :
-                        isHour ? new Date(year, month, day, i) : new Date(year, month, day, hour, i * 5);
-                    var cellText = isYear ? i :
-                      isMonth ? settings.text.monthsShort[i] : isDay ? cellDate.getDate() :
-                        formatter.time(cellDate, settings, true);
+                    var cellDate =
+                      isYear ? new Date(i, month, 1, hour, minute) :
+                      isMonth ? new Date(year, i, 1, hour, minute) :
+                      isDay ? new Date(year, month, i, hour, minute) :
+                      isHour ? new Date(year, month, day, i) :
+                      new Date(year, month, day, hour, i * 5);
+                    var cellText =
+                      isYear ? i :
+                      isMonth ? settings.text.monthsShort[i] :
+                      isDay ? cellDate.getDate() :
+                      isHour ? formatter.time(cellDate, settings, 'hour') :
+                      isMinute ? formatter.time(cellDate, settings, 'minute') :
+                      formatter.time(cellDate, settings);
                     cell = $('<td/>').addClass(className.cell).appendTo(row);
                     cell.text(cellText);
                     cell.data(metadata.date, cellDate);
@@ -1082,7 +1107,7 @@
           settings.type === 'month' ? month + ' ' + year :
           (settings.monthFirst ? month + ' ' + day : day + ' ' + month) + ', ' + year;
       },
-      time: function (date, settings, forCalendar) {
+      time: function (date, settings, hrMinOnly) {
         if (!date) {
           return '';
         }
@@ -1093,7 +1118,24 @@
           ampm = ' ' + (hour < 12 ? settings.text.am : settings.text.pm);
           hour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
         }
-        return hour + ':' + (minute < 10 ? '0' : '') + minute + ampm;
+
+        // prepend zero to minute if required
+        minute = minute < 10 ? '0' + minute : minute;
+
+        // allow formatting of individual hour/minute fields
+        if ('string' === typeof hrMinOnly) {
+          if (hrMinOnly === '24h')
+            return hour < 10 ? '0' + hour : hour;
+          if (hrMinOnly === '12h')
+            return hour + ampm;
+          // if 12/24 hour is not specified, just default to using settings.ampm
+          if (hrMinOnly === 'hour')
+            return settings.ampm ? hour + ampm : hour < 10 ? '0' + hour : hour;
+          if (hrMinOnly === 'minute')
+            return minute;
+        }
+
+        return hour + ':' + minute + ampm;
       },
       today: function (settings) {
         return settings.type === 'date' ? settings.text.today : settings.text.now;
@@ -1362,7 +1404,8 @@
       rangeCell: 'range',
       focusCell: 'focus',
       todayCell: 'today',
-      today: 'today link'
+      today: 'today link',
+      timeHeader: 'time-header'
     },
 
     metadata: {
